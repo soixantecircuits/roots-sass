@@ -5,7 +5,15 @@ module.exports = function(grunt) {
   // Show elapsed time
   require('time-grunt')(grunt);
 
-  var jsFileList = [
+  var appConfig = {
+    app: 'assets/src',
+    dev: 'assets/build/dev',
+    prod: 'assets/build/prod'
+  };
+
+  // List of vendors/lib
+  var vendorList = [
+    'assets/vendor/modernizr/modernizr.js',
     'assets/vendor/bootstrap-sass-official/assets/javascripts/bootstrap/transition.js',
     'assets/vendor/bootstrap-sass-official/assets/javascripts/bootstrap/alert.js',
     'assets/vendor/bootstrap-sass-official/assets/javascripts/bootstrap/button.js',
@@ -18,20 +26,39 @@ module.exports = function(grunt) {
     'assets/vendor/bootstrap-sass-official/assets/javascripts/bootstrap/scrollspy.js',
     'assets/vendor/bootstrap-sass-official/assets/javascripts/bootstrap/tab.js',
     'assets/vendor/bootstrap-sass-official/assets/javascripts/bootstrap/affix.js',
-    'assets/js/plugins/*.js',
-    'assets/js/_*.js'
+    'assets/vendor/gsap/src/minified/TweenMax.min.js',
+    'assets/vendor/gsap/src/minified/TimelineMax.min.js',
+    'assets/vendor/jquery-backstretch/jquery.backstretch.min.js',
+    'assets/vendor/ScrollMagic/js/jquery.scrollmagic.min.js',
+    'assets/vendor/ScrollMagic/js/jquery.scrollmagic.debug.js',
+    'assets/vendor/slick.js/slick/slick.min.js',
+    appConfig.app+'/js/lib/*.js',
+    appConfig.app+'/js/_*.js'
+  ];
+  // What we coded
+  var jsAppList = [
+    appConfig.app+'/js/partials/helpers.js',
+    appConfig.app+'/js/partials/buttons.js',
+    appConfig.app+'/js/partials/scroll.js',
+    appConfig.app+'/js/partials/*.js',
+    '!'+appConfig.app+'/js/partials/main.js',
+    appConfig.app+'/js/partials/main.js'
   ];
 
   grunt.initConfig({
+    config: appConfig,
+
+    clean: {
+      dev: ['<%= config.dev %>'],
+      prod: ['<%= config.prod%>']
+    },
     jshint: {
       options: {
         jshintrc: '.jshintrc'
       },
       all: [
         'Gruntfile.js',
-        'assets/js/*.js',
-        '!assets/js/scripts.js',
-        '!assets/**/*.min.*'
+        '<%= config.app %>/js/partials/*.js',
       ]
     },
     sass: {
@@ -41,19 +68,19 @@ module.exports = function(grunt) {
           compass: true,
         },
         files: {
-          'assets/css/main.css': [
-            'assets/sass/main.scss'
+          '<%= config.dev %>/css/main.css': [
+            '<%= config.app %>/sass/main.scss'
           ]
         }
       },
-      build: {
+      prod: {
         options: {
           style: 'compressed',
           compass: true,
         },
         files: {
-          'assets/css/main.min.css': [
-            'assets/sass/main.scss'
+          '<%= config.prod %>/css/main.min.css': [
+            '<%= config.app %>/sass/main.scss'
           ]
         }
       }
@@ -62,15 +89,20 @@ module.exports = function(grunt) {
       options: {
         separator: ';',
       },
-      dist: {
-        src: [jsFileList],
-        dest: 'assets/js/scripts.js',
+      dev: {
+        files: {
+          '<%= config.dev %>/js/app.js': [jsAppList],
+          '<%= config.dev %>/js/scripts.js': [vendorList]
+        }
       },
     },
     uglify: {
-      dist: {
+      prod: {
         files: {
-          'assets/js/scripts.min.js': [jsFileList]
+          '<%= config.prod %>/js/scripts.min.js': [
+            vendorList,
+            jsAppList
+          ]
         }
       }
     },
@@ -81,27 +113,13 @@ module.exports = function(grunt) {
       dev: {
         options: {
           map: {
-            prev: 'assets/css/'
+            prev: '<%= config.dev %>/css/'
           }
         },
-        src: 'assets/css/main.css'
+        src: '<%= config.dev %>/css/main.css'
       },
-      build: {
-        src: 'assets/css/main.min.css'
-      }
-    },
-    modernizr: {
-      build: {
-        devFile: 'assets/vendor/modernizr/modernizr.js',
-        outputFile: 'assets/js/vendor/modernizr.min.js',
-        files: {
-          'src': [
-            ['assets/js/scripts.min.js'],
-            ['assets/css/main.min.css']
-          ]
-        },
-        uglify: true,
-        parseFiles: true
+      prod: {
+        src: '<%= config.prod %>/css/main.min.css'
       }
     },
     version: {
@@ -116,22 +134,22 @@ module.exports = function(grunt) {
           }
         },
         files: {
-          'lib/scripts.php': 'assets/{css,js}/{main,scripts}.min.{css,js}'
+          'lib/scripts.php': '<%= config.prod %>/{css,js}/{main,scripts,app}.min.{css,js}'
         }
       }
     },
     watch: {
       sass: {
         files: [
-          'assets/sass/*.scss',
-          'assets/sass/**/*.scss'
+          '<%= config.app %>/sass/*.scss',
+          '<%= config.app %>/sass/**/*.scss'
         ],
         tasks: ['sass:dev', 'autoprefixer:dev']
       },
       js: {
         files: [
-          jsFileList,
-          '<%= jshint.all %>'
+          vendorList,
+          jsAppList
         ],
         tasks: ['jshint', 'concat']
       },
@@ -142,8 +160,8 @@ module.exports = function(grunt) {
           livereload: false
         },
         files: [
-          'assets/css/main.css',
-          'assets/js/scripts.js',
+          '<%= config.dev %>/css/main.css',
+          '<%= config.dev %>/js/scripts.js',
           'templates/*.php',
           '*.php'
         ]
@@ -156,17 +174,26 @@ module.exports = function(grunt) {
     'dev'
   ]);
   grunt.registerTask('dev', [
-    'jshint',
-    'sass:dev',
-    'autoprefixer:dev',
-    'concat'
+    'clean:dev', // Delete old dev folder to prevent errors
+    'jshint', // Check code quality
+    'sass:dev', // Compile Sass without minify || Dest: 'assets/dev/css/main.css'
+    'autoprefixer:dev', // Parse CSS and add vendor-prefixed CSS properties || same dest as sass:dev
+    'concat:dev', // Concat fils from jsFileList array
+  ]);
+  grunt.registerTask('prod', [
+    'clean:prod', // Delete old build folder to prevent errors
+    'jshint', // Check code quality
+    'sass:prod', // Compile and minify Sass || Dest: 'assets/build/css/main.min.css'
+    'autoprefixer:prod', // Parse CSS and add vendor-prefixed CSS properties || same dest as sass:build
+    'uglify:prod', // Minify and concat vendorList array
+    'version'
   ]);
   grunt.registerTask('build', [
-    'jshint',
-    'sass:build',
-    'autoprefixer:build',
-    'uglify',
-    'modernizr',
-    'version'
+    'dev',
+    'prod'
+  ]);
+  grunt.registerTask('serve', [
+    'dev',
+    'watch'
   ]);
 };

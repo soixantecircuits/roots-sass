@@ -1,0 +1,70 @@
+.u-center {
+  margin: auto;
+  text-align: center;
+  display: inherit;
+}
+.u-left {
+  float: left;
+  display: inherit;
+}
+.u-right {
+  float: right;
+  display: inherit;
+}
+
+.u-clearfix:after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+.u-full-bg {
+  background-image: url("");
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+  background-position: center center;
+  @include backgroundSize(cover);
+  @include transition(background-image, 400ms, $easing);
+}
+.u-not-displayed {
+  display: none;
+}
+.u-exposant {
+  font-size: 10px;
+  font-weight: 600;
+  vertical-align: super;
+}
+
+.u-full-screen {
+  min-height: 100vh;
+  padding-top: 195px;
+}
+
+
+/**
+ * iPad with portrait orientation.
+ */
+@media all and (device-width: 768px) and (device-height: 1024px) and (orientation:portrait){
+  .u-full-screen {
+    min-height: 1024px;
+  }
+}
+
+/**
+ * iPad with landscape orientation.
+ */
+@media all and (device-width: 768px) and (device-height: 1024px) and (orientation:landscape){
+  .u-full-screen {
+    min-height: 768px;
+  }
+}
+
+/**
+ * iPhone 5
+ * You can also target devices with aspect ratio.
+ */
+@media screen and (device-aspect-ratio: 40/71) {
+  .u-full-screen {
+    min-height: 500px;
+  }
+}

@@ -19,21 +19,23 @@ function roots_scripts() {
    * The build task in Grunt renames production assets with a hash
    * Read the asset names from assets-manifest.json
    */
+  $devFolder = '/assets/build/dev';
+  $prodFolder = '/assets/build/prod';
+
   if (WP_ENV === 'development') {
     $assets = array(
-      'css'       => '/assets/css/main.css',
-      'js'        => '/assets/js/scripts.js',
-      'modernizr' => '/assets/vendor/modernizr/modernizr.js',
-      'jquery'    => '//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.js'
+        'css'          => $devFolder.'/css/main.css',
+        'js'           => $devFolder.'/js/app.js',
+        'jquery'       => '//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.js',
+        'lib'          => $devFolder.'/js/scripts.js'
     );
   } else {
     $get_assets = file_get_contents(get_template_directory() . '/assets/manifest.json');
     $assets     = json_decode($get_assets, true);
     $assets     = array(
-      'css'       => '/assets/css/main.min.css?' . $assets['assets/css/main.min.css']['hash'],
-      'js'        => '/assets/js/scripts.min.js?' . $assets['assets/js/scripts.min.js']['hash'],
-      'modernizr' => '/assets/js/vendor/modernizr.min.js',
-      'jquery'    => '//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js'
+        'css'          => $prodFolder.'/css/main.min.css?' . $assets['assets/css/main.min.css']['hash'],
+        'js'           => $prodFolder.'/js/scripts.min.js?' . $assets['assets/js/scripts.min.js']['hash'],
+        'jquery'       => '//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js',
     );
   }
 
@@ -42,7 +44,7 @@ function roots_scripts() {
   /**
    * jQuery is loaded using the same method from HTML5 Boilerplate:
    * Grab Google CDN's latest jQuery with a protocol relative URL; fallback to local if offline
-   * It's kept in the header instead of footer to avoid conflicts with plugins.
+   * It's kept in the header instead of footer to avoid conflicts with lib.
    */
   if (!is_admin() && current_theme_supports('jquery-cdn')) {
     wp_deregister_script('jquery');
@@ -54,9 +56,12 @@ function roots_scripts() {
     wp_enqueue_script('comment-reply');
   }
 
-  wp_enqueue_script('modernizr', get_template_directory_uri() . $assets['modernizr'], array(), null, false);
   wp_enqueue_script('jquery');
+  if (WP_ENV === 'development') {
+    wp_enqueue_script('lib', get_template_directory_uri() . $assets['lib'], array(), null, true);
+  }
   wp_enqueue_script('roots_js', get_template_directory_uri() . $assets['js'], array(), null, true);
+
 }
 add_action('wp_enqueue_scripts', 'roots_scripts', 100);
 
@@ -83,20 +88,20 @@ add_action('wp_head', 'roots_jquery_local_fallback');
  * Cookie domain is 'auto' configured. See: http://goo.gl/VUCHKM
  */
 function roots_google_analytics() { ?>
-<script>
-  <?php if (WP_ENV === 'production') : ?>
+  <script>
+    <?php if (WP_ENV === 'production') : ?>
     (function(b,o,i,l,e,r){b.GoogleAnalyticsObject=l;b[l]||(b[l]=
-    function(){(b[l].q=b[l].q||[]).push(arguments)});b[l].l=+new Date;
-    e=o.createElement(i);r=o.getElementsByTagName(i)[0];
-    e.src='//www.google-analytics.com/analytics.js';
-    r.parentNode.insertBefore(e,r)}(window,document,'script','ga'));
-  <?php else : ?>
+        function(){(b[l].q=b[l].q||[]).push(arguments)});b[l].l=+new Date;
+      e=o.createElement(i);r=o.getElementsByTagName(i)[0];
+      e.src='//www.google-analytics.com/analytics.js';
+      r.parentNode.insertBefore(e,r)}(window,document,'script','ga'));
+    <?php else : ?>
     function ga() {
       console.log('GoogleAnalytics: ' + [].slice.call(arguments));
     }
-  <?php endif; ?>
-  ga('create','<?php echo GOOGLE_ANALYTICS_ID; ?>','auto');ga('send','pageview');
-</script>
+    <?php endif; ?>
+    ga('create','<?php echo GOOGLE_ANALYTICS_ID; ?>','auto');ga('send','pageview');
+  </script>
 
 <?php }
 if (GOOGLE_ANALYTICS_ID && (WP_ENV !== 'production' || !current_user_can('manage_options'))) {
